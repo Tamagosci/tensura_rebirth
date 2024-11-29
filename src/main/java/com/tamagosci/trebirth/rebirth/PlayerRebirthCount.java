@@ -11,6 +11,9 @@ public class PlayerRebirthCount {
 	public void addRebirthCount(int amount) {
 		rebirthCount = Math.max(rebirthCount + amount, MIN_REBIRTH_COUNT);
 	}
+	public void setRebirthCount(int amount) {
+		rebirthCount = Math.max(amount, MIN_REBIRTH_COUNT);
+	}
 
 	public void copyFrom(PlayerRebirthCount source) { this.rebirthCount = source.rebirthCount; }
 	public void saveNBTData(CompoundTag nbt) { nbt.putInt(REBIRTH_COUNT_NBT, rebirthCount); }
