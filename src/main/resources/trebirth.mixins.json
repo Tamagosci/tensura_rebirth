@@ -1,0 +1,9 @@
+{
+	"required": true,
+	"package": "com.tamagosci.trebirth.mixin",
+	"compatibilityLevel": "JAVA_17",
+	"refmap": "trebirth.refmap.json",
+	"mixins": [],
+	"client": [],
+	"minVersion": "0.8"
+}
