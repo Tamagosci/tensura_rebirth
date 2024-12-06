@@ -52,6 +52,10 @@ public class Config
     private static final ForgeConfigSpec.BooleanValue RESET_NON_UNIQUE_SKILLS = BUILDER
        .comment("Whether to reset non unique skills on rebirth")
        .define("resetNonUniqueSkills", true);
+    private static final ForgeConfigSpec.BooleanValue RESET_UNIQUE_SKILLS = BUILDER
+       .comment("Whether to reroll all unique skills on rebirth or not")
+       .comment("If false you will still gain at most 1 skill per rebirth")
+       .define("resetUniqueSkills", true);
     private static final ForgeConfigSpec.BooleanValue RESET_SPELLS = BUILDER
        .comment("Whether to reset spells on rebirth")
        .define("resetSpells", true);
@@ -65,6 +69,12 @@ public class Config
        .comment("Whether to reset schematics on rebirth")
        .define("resetSchematics", false);
 
+    // Keep
+    private static final ForgeConfigSpec.BooleanValue KEEP_MASTERY = BUILDER
+       .comment("Whether to keep mastery if you roll a skill you already had")
+       .define("keepMastery", false);
+
+
     static final ForgeConfigSpec SPEC = BUILDER.build();
 
     // Skills
@@ -77,10 +87,14 @@ public class Config
     // Reset
     public static boolean resetRace;
     public static boolean resetNonUniqueSkills;
+    public static boolean resetUniqueSkills;
     public static boolean resetSpells;
     public static boolean resetBattlewills;
     public static boolean resetSpirits;
     public static boolean resetSchematics;
+
+    // Keep
+    public static boolean keepMastery;
 
     private static boolean validateAbilityName(final Object obj) {
         return obj instanceof final String abilityName && SkillAPI.getSkillRegistry().containsKey(new ResourceLocation(abilityName));
@@ -104,9 +118,13 @@ public class Config
         // Reset
         resetRace = RESET_RACE.get();
         resetNonUniqueSkills = RESET_NON_UNIQUE_SKILLS.get();
+        resetUniqueSkills = RESET_UNIQUE_SKILLS.get();
         resetSpells = RESET_SPELLS.get();
         resetBattlewills = RESET_BATTLEWILLS.get();
         resetSpirits = RESET_SPIRITS.get();
         resetSchematics = RESET_SCHEMATICS.get();
+
+        // Keep
+        keepMastery = KEEP_MASTERY.get();
     }
 }
