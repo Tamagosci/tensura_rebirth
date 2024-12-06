@@ -67,6 +67,6 @@ side="BOTH"
 [[dependencies.${mod_id}]]
 modId = "tensura"
 mandatory = true
-versionRange = "1.0.+"
+versionRange = "[1.0.5, 1.1.0)"
 ordering = "AFTER"
 side = "BOTH"
