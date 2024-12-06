@@ -23,22 +23,9 @@ public class TriggerRebirthC2SPacket {
 			ServerPlayer player = context.getSender();
 			MinecraftServer server = player.level.getServer();
 
-			//TODO: Rebirth Logic here
+			//TODO: Call Rebirth Logic here
 
-			// Check if player can rebirth
-			final Advancement higherFormAdvancement = server.getAdvancements().getAdvancement(TensuraAdvancementsHelper.Advancements.HIGHER_FORM);
-			if (player.getAdvancements().getOrStartProgress(higherFormAdvancement).isDone()) {
-				// Reset stuff based on config here
-				TensuraCommand
-				// Increment rebirth count
-				player.getCapability(PlayerRebirthCountProvider.PLAYER_REBIRTH_COUNT).ifPresent(rebirthCount -> {
-					rebirthCount.addRebirthCount(1);
-				});
-				// Remove advancement
-				for (String criterion : player.getAdvancements().getOrStartProgress(higherFormAdvancement).getCompletedCriteria()) {
-					player.getAdvancements().revoke(higherFormAdvancement, criterion);
-				}
-			}
+
 		});
 		return true;
 	}
