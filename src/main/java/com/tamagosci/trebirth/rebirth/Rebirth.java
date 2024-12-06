@@ -13,6 +13,7 @@ import com.github.manasmods.tensura.ability.skill.Skill;
 import com.github.manasmods.tensura.ability.skill.resist.ResistSkill;
 import com.github.manasmods.tensura.capability.effects.TensuraEffectsCapability;
 import com.github.manasmods.tensura.capability.ep.TensuraEPCapability;
+import com.github.manasmods.tensura.capability.race.ITensuraPlayerCapability;
 import com.github.manasmods.tensura.capability.race.TensuraPlayerCapability;
 import com.github.manasmods.tensura.capability.skill.TensuraSkillCapability;
 import com.github.manasmods.tensura.capability.smithing.ISmithingCapability;
@@ -44,45 +45,41 @@ import net.minecraft.world.level.Level;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Iterator;
 import java.util.List;
 
 public class Rebirth {
-	public static boolean rebirthEntity(@NotNull LivingEntity entity) {
+	public static boolean rebirthEntity(@NotNull LivingEntity entity, boolean incrementRebirthCounter) {
 		// Check if player can rebirth
 		if (!canRebirthEntity(entity)) return false;
 		// Make important variables accessible
 		ServerPlayer player = (ServerPlayer) entity;
 		MinecraftServer server = player.getServer();
 		Level level = player.getLevel();
-		final Advancement higherFormAdvancement = server.getAdvancements().getAdvancement(TensuraAdvancementsHelper.Advancements.HIGHER_FORM);
-		if (player.getAdvancements().getOrStartProgress(higherFormAdvancement).isDone()) {
-			// Reset stuff based on config here
-			resetPlayerHonorConfig(player);
-			// Disable flight
-			if (Config.resetRace) {
-				if (!player.isCreative() && !player.isSpectator() && (player.getAbilities().flying || player.getAbilities().mayfly)) {
-					player.getAbilities().flying = false;
-					player.getAbilities().mayfly = false;
-					player.onUpdateAbilities();
-				}
+		// Reset stuff based on config here
+		resetPlayerHonorConfig(player);
+		// Disable flight
+		if (Config.resetRace) {
+			if (!player.isCreative() && !player.isSpectator() && (player.getAbilities().flying || player.getAbilities().mayfly)) {
+				player.getAbilities().flying = false;
+				player.getAbilities().mayfly = false;
+				player.onUpdateAbilities();
 			}
-			// Increment rebirth count
+		}
+		// Increment rebirth count
+		if (incrementRebirthCounter) {
 			player.getCapability(PlayerRebirthCountProvider.PLAYER_REBIRTH_COUNT).ifPresent(rebirthCount -> {
 				rebirthCount.addRebirthCount(1);
 			});
-			// Remove advancement
-			for (String criterion : player.getAdvancements().getOrStartProgress(higherFormAdvancement).getCompletedCriteria()) {
-				player.getAdvancements().revoke(higherFormAdvancement, criterion);
-			}
-			// Play sound
-			entity.getLevel().playSound((Player)null, entity.getX(), entity.getY(), entity.getZ(), SoundEvents.TOTEM_USE, SoundSource.PLAYERS, 1.0F, 1.0F);
-			//
-			TensuraParticleHelper.addServerParticlesAroundSelf(entity, ParticleTypes.TOTEM_OF_UNDYING, (double)1.0F);
-			TensuraParticleHelper.addServerParticlesAroundSelf(entity, ParticleTypes.TOTEM_OF_UNDYING, (double)2.0F);
-			TensuraParticleHelper.addServerParticlesAroundSelf(entity, ParticleTypes.FLASH, (double)1.0F);
 		}
+		// Play sound
+		entity.getLevel().playSound((Player)null, entity.getX(), entity.getY(), entity.getZ(), SoundEvents.TOTEM_USE, SoundSource.PLAYERS, 1.0F, 1.0F);
+		// Shinies
+		TensuraParticleHelper.addServerParticlesAroundSelf(entity, ParticleTypes.TOTEM_OF_UNDYING, (double)1.0F);
+		TensuraParticleHelper.addServerParticlesAroundSelf(entity, ParticleTypes.TOTEM_OF_UNDYING, (double)2.0F);
+		TensuraParticleHelper.addServerParticlesAroundSelf(entity, ParticleTypes.FLASH, (double)1.0F);
 	}
 
 	public static boolean canRebirthEntity(@NotNull LivingEntity entity) {
@@ -139,6 +136,8 @@ public class Rebirth {
 		if (player instanceof ServerPlayer serverPlayer) {
 			// Race Reset
 			if (Config.resetRace) {
+				TensuraPlayerCapability.getFrom(player).ifPresent(ITensuraPlayerCapability::clearIntrinsicSkills);
+
 				if (player.getLevel().getGameRules().getBoolean(TensuraGameRules.RIMURU_MODE)) {
 					RaceSelectionMenu.reincarnateAsRimuru(player);
 				} else {
@@ -199,94 +198,4 @@ public class Rebirth {
 	public static boolean isUniqueSkill(Skill skill) {
 		return skill.getType() == Skill.SkillType.UNIQUE || skill.getType() == Skill.SkillType.ULTIMATE;
 	}
-
-	//
- 	// COPIED FROM TENSURA RESET SCROLL
-  	//
-
-	public static void resetRace(Player player) {
-		MinecraftServer server = player.getServer();
-		if (server != null) {
-			ServerStatsCounter stats = server.getPlayerList().getPlayerStats(player);
-			stats.markAllDirty();
-
-			for(Stat<?> stat : stats.getDirty()) {
-				stats.setValue(player, stat, 0);
-			}
-		}
-
-		TensuraPlayerCapability.getFrom(player).ifPresent((cap) -> {
-			if (cap.getRace() != null) {
-				SkillStorage storage = SkillAPI.getSkillsFrom(player);
-				Iterator<ManasSkillInstance> iterator = storage.getLearnedSkills().iterator();
-
-				while(iterator.hasNext()) {
-					Object patt11185$temp = iterator.next();
-					if (patt11185$temp instanceof TensuraSkillInstance) {
-						TensuraSkillInstance instance = (TensuraSkillInstance)patt11185$temp;
-						if ((isIntrinsicSkill(cap,
-													 instance) || instance.getSkill() instanceof Magic || instance.getSkill() instanceof ResistSkill) && !MinecraftForge.EVENT_BUS.post(new RemoveSkillEvent(instance, player))) {
-							iterator.remove();
-						}
-					}
-				}
-
-				storage.syncAll();
-			}
-
-			cap.clearIntrinsicSkills();
-		});
-		TensuraPlayerCapability.resetEverything(player);
-		TensuraEPCapability.resetEverything(player);
-		TensuraSkillCapability.resetEverything(player, false, true);
-		TensuraEffectsCapability.resetEverything(player, true, true);
-		if (player instanceof ServerPlayer serverPlayer) {
-			serverPlayer.setRespawnPosition(Level.OVERWORLD, (BlockPos)null, 0.0F, false, false);
-			List<ResourceLocation> races = TensuraPlayerCapability.loadRaces();
-			NetworkHooks.openScreen(serverPlayer, new SimpleMenuProvider(RaceSelectionMenu::new, Component.translatable("tensura.race.selection")), (buf) -> {
-				buf.writeBoolean(true);
-				buf.writeCollection(races, FriendlyByteBuf::writeResourceLocation);
-			});
-		}
-
-		RaceSelectionMenu.grantLearningResistance(player);
-	}
-
-	public static void resetSkill(Player player) {
-		SkillStorage storage = SkillAPI.getSkillsFrom(player);
-		Iterator<ManasSkillInstance> iterator = storage.getLearnedSkills().iterator();
-
-		while(iterator.hasNext()) {
-			Object skill = iterator.next();
-			if (skill instanceof TensuraSkillInstance instance) {
-				ManasSkill skill = instance.getSkill();
-				if (!(instance.getSkill() instanceof Magic)) {
-					Race race = TensuraPlayerCapability.getRace(player);
-					if ((race == null || !race.isIntrinsicSkill(skill)) && !TensuraPlayerCapability.getIntrinsicList(player).contains(
-						SkillUtils.getSkillId(skill)) && !MinecraftForge.EVENT_BUS.post(new RemoveSkillEvent(instance, player))) {
-						iterator.remove();
-						if (player.level.getServer() != null) {
-							UniqueSkillSaveData saveData = UniqueSkillSaveData.get(player.level.getServer().overworld());
-							if (skill.getRegistryName() != null && saveData.hasSkill(skill.getRegistryName())) {
-								saveData.removeSkill(skill.getRegistryName());
-							}
-						}
-					}
-				}
-			}
-		}
-
-		storage.syncAll();
-		TensuraSkillCapability.resetEverything(player, true, false);
-		RaceSelectionMenu.randomUniqueSkill(player, true);
-		RaceSelectionMenu.grantLearningResistance(player);
-		TensuraSkillCapability.getFrom(player).ifPresent((cap) -> {
-			cap.setWaterPoint((double)0.0F);
-			cap.setLavaPoint((double)0.0F);
-			cap.clearAllWarp();
-		});
-		TensuraSkillCapability.sync(player);
-	}
-
-
 }
